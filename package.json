@@ -1,0 +1,46 @@
+{
+  "name": "streamflix",
+  "version": "1.0.0",
+  "private": true,
+  "description": "StreamFlix - Full-Stack Streaming Website (React + Node.js + Express + MySQL)",
+  "workspaces": [
+    "frontend",
+    "backend"
+  ],
+  "scripts": {
+    "dev": "concurrently \"npm run dev --workspace=backend\" \"npm run dev --workspace=frontend\"",
+    "dev:backend": "npm run dev --workspace=backend",
+    "dev:frontend": "npm run dev --workspace=frontend",
+    "build": "npm run build --workspace=frontend && npm run build --workspace=backend",
+    "build:frontend": "npm run build --workspace=frontend",
+    "build:backend": "npm run build --workspace=backend",
+    "start": "npm run start --workspace=backend",
+    "start:backend": "npm run start --workspace=backend",
+    "lint": "npm run lint --workspace=frontend && npm run lint --workspace=backend",
+    "lint:fix": "npm run lint:fix --workspace=frontend && npm run lint:fix --workspace=backend",
+    "typecheck": "npm run typecheck --workspace=frontend && npm run typecheck --workspace=backend",
+    "test": "npm run test --workspace=backend && npm run test --workspace=frontend",
+    "test:unit": "npm run test:unit --workspace=backend",
+    "test:integration": "npm run test:integration --workspace=backend",
+    "test:frontend": "npm run test --workspace=frontend",
+    "test:e2e": "npm run test:e2e --workspace=frontend",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "db:migrate": "npm run db:migrate --workspace=backend",
+    "admin:create": "npm run admin:create --workspace=backend"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.2",
+    "prettier": "^3.4.2"
+  },
+  "overrides": {
+    "mysql2": "^3.24.6",
+    "express-mysql-session": {
+      "mysql2": "^3.24.6"
+    }
+  },
+  "engines": {
+    "node": ">=20.0.0",
+    "npm": ">=10.0.0"
+  }
+}
