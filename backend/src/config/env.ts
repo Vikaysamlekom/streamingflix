@@ -27,6 +27,7 @@ const envSchema = z.object({
   DB_USER: z.string().min(1),
   DB_PASSWORD: z.string().default(''),
   DB_CONNECTION_LIMIT: z.coerce.number().int().positive().default(10),
+  DB_SSL: booleanish.optional(),
 
   SESSION_SECRET: z.string().min(16, 'SESSION_SECRET minimal 16 karakter'),
   SESSION_MAX_AGE_HOURS: z.coerce.number().positive().default(8),

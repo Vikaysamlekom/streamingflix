@@ -2,6 +2,7 @@ import session from 'express-session';
 import mysqlSessionModuleImport from 'express-mysql-session';
 import type { RequestHandler } from 'express';
 import { env, cookieSecure, isProduction, isTest } from './env';
+import { getDatabaseSslOptions } from './database';
 
 /**
  * Konfigurasi session-based authentication dengan session store MySQL.
@@ -52,6 +53,7 @@ export function createSessionMiddleware(): RequestHandler {
     user: env.DB_USER,
     password: env.DB_PASSWORD,
     database: env.DB_NAME,
+    ssl: getDatabaseSslOptions(),
     clearExpired: true,
     checkExpirationInterval: 15 * 60 * 1000, // bersihkan tiap 15 menit
     expiration: maxAgeMs,

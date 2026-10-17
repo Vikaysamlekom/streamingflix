@@ -10,10 +10,10 @@ domain + HTTPS untuk cookie, keamanan produksi, dan checklist pasca-deploy.
 
 | Komponen | Target hosting (contoh) | Catatan |
 |---|---|---|
-| Frontend (SPA) | Vercel / Netlify | Perlu SPA rewrite ke `index.html` |
-| Backend (API) | Node host apa pun (VPS, Render, Railway, Fly.io) | Jalankan `node dist/server.js` |
-| Database | MySQL 8 terkelola atau self-hosted | InnoDB, utf8mb4 |
-| Domain | `app.domain` + `api.domain` (atau satu origin via reverse proxy) | Menentukan strategi cookie |
+| Frontend (SPA) | Vercel service `web` (atau Netlify/host statis klasik) | SPA rewrite + cache aset di `vercel.json` root (`services.web`) |
+| Backend (API) | Vercel service `api` (`framework: express`), atau host Node lain | Entry `backend/src/index.ts`; publik di `/api/*` via rewrite top-level |
+| Database | MySQL 8 terkelola (mis. Aiven free tier) atau self-hosted | InnoDB, utf8mb4; layanan cloud umumnya mewajibkan TLS → `DB_SSL=1` |
+| Domain | Satu domain (mode Services), atau `app.domain` + `api.domain` | Satu origin membuat cookie sederhana (§4 strategi 2 mode klasik) |
 
 Versi acuan: **Node.js >= 20**, **MySQL 8.x**.
 
@@ -55,6 +55,10 @@ npm run db:migrate
 
 Sumber migrasi tunggal: `database/migrations/`. Runner mencatatnya di `schema_migrations`.
 
+> Layanan MySQL cloud (mis. Aiven) umumnya **mewajibkan koneksi TLS**. Set `DB_SSL=1`
+> di environment migrasi agar pool & koneksi bootstrap memakai TLS. Koneksi lokal
+> XAMPP tidak menoleransi TLS — di dev biarkan `DB_SSL` kosong.
+
 > Alternatif: impor `database/schema.sql` (berisi `CREATE DATABASE` + `USE`) melalui klien
 > MySQL. Pastikan `schema.sql` **sinkron** dengan `migrations/`.
 
@@ -93,6 +97,7 @@ Setel pada panel hosting atau file `.env` (jangan di-commit ke repo):
 | `DB_USER` | `streamflix_app` |
 | `DB_PASSWORD` | `<PASSWORD_KUAT>` |
 | `DB_CONNECTION_LIMIT` | `10` (sesuaikan kapasitas DB) |
+| `DB_SSL` | `1` bila host DB mewajibkan TLS (Aiven dll.); kosong/`0` untuk MySQL lokal |
 | `SESSION_SECRET` | **acak, minimal 32 karakter** (wajib di produksi) |
 | `SESSION_MAX_AGE_HOURS` | `8` |
 | `COOKIE_SAMESITE` | `lax` / `strict` / `none` (lihat bagian 4) |
@@ -197,6 +202,10 @@ Sesi admin memakai cookie `streamflix.sid`:
 | `VITE_API_BASE_URL` | `https://api.domain/api` |
 
 > Nilai `VITE_*` di-*bake* saat build. Set sebelum menjalankan `vite build`.
+>
+> Default build produksi (`frontend/.env.production`): `VITE_API_BASE_URL=/api` —
+> same-origin, pas untuk mode Services (satu domain). Bila frontend & API dipisah domain,
+> set env project pada Vercel untuk menimpanya.
 
 ### 3.2 Build
 
@@ -208,18 +217,30 @@ npm run build           # tsc -b && vite build → dist/
 
 Hasil build statis (HTML/CSS/JS) siap di-upload ke CDN/host statis.
 
-### 3.3 Deploy ke Vercel / Netlify
+### 3.3 Deploy ke Vercel — mode Services (konfigurasi repo ini)
 
-**Vercel**
-- Import repo, set **Root Directory** ke `frontend/` (atau konfigurasikan workspace).
-- **Build Command**: `npm run build`
-- **Output Directory**: `dist`
-- Tambahkan **SPA rewrite**: semua rute diarahkan ke `index.html`.
+Repo ini memakai **satu project dengan dua service**, dikonfigurasi `vercel.json` di root:
 
-**Netlify**
-- **Build Command**: `npm run build`
-- **Publish Directory**: `frontend/dist`
-- Tambahkan file `_redirects` atau aturan rewrite.
+- `api` — folder `backend/`, `framework: "express"`; publik di `/api/*` lewat rewrite
+  top-level `{ "source": "/api/(.*)", "destination": { "service": "api" } }`. Entry
+  tetap `src/index.ts` (default-export app; zero-config Express). Env produksi (§2.1)
+  diset di level **project**; `PORT` tidak perlu; `TRUST_PROXY=1` wajib (di balik proxy).
+- `web` — folder `frontend/`, `framework: "vite"`; publik di `/(.*)`. Fallback SPA
+  (`/(.*) → /index.html`) dan cache aset `assets/` didefinisikan **di dalam service**,
+  karena routing ke sebuah service bersifat final (tidak ada jatuh-balik ke service lain).
+- Binding cadangan `web → api` (`API_URL`, internal) dideklarasikan di service `web`.
+  Saat ini web statis dan tidak punya kode server-side, jadi `API_URL` belum dibaca siapa
+  pun dan browser tetap memanggil `/api` same-origin; bila kelak `web` mendapat runtime
+  server-side, bacalah `process.env.API_URL` untuk memanggil API secara internal.
+
+Cara deploy: `vercel link` di root repo → set env project (lihat §9.4) → `vercel --prod`.
+`vercel dev` menjalankan kedua service secara lokal bersamaan untuk uji coba; pengembangan
+harian tetap `npm run dev` + XAMPP (§dev flow lokal tidak berubah).
+
+**Netlify / deployment klasik (alternatif non-services)**
+- Frontend: build `npm run build`, publish `frontend/dist`, SPA rewrite (§3.4).
+- Backend: deploy `backend/` sebagai project terpisah (zero-config Express, tanpa folder
+  `api/`), atau host Node lain (§2.3) — sesuai §9 versi sebelumnya / prinsip §2–§4.
 
 ### 3.4 SPA Rewrite (WAJIB)
 
@@ -233,6 +254,12 @@ Contoh `vercel.json`:
 {
   "rewrites": [{ "source": "/(.*)", "destination": "/index.html" }]
 }
+```
+
+> Mode **Services**: aturan ini sudah hidup di `vercel.json` root, bagian
+> `services.web.rewrites` + `headers` (file `frontend/vercel.json` sudah dihapus).
+> Snippet di atas tetap berlaku bila frontend di-deploy sebagai project standalone yang
+> terpisah dari API (deployment klasik).
 ```
 
 Contoh `netlify.toml`:
@@ -357,3 +384,118 @@ npm run admin:create
 
 Dokumen terkait: [`ARCHITECTURE.md`](./ARCHITECTURE.md) · [`DATABASE.md`](./DATABASE.md) ·
 [`API.md`](./API.md) · [`TESTING.md`](./TESTING.md).
+
+---
+
+## 9. Resep Deployment Gratis: Vercel + Aiven MySQL
+
+Resep lengkap dengan layanan **gratis** (limit terverifikasi 2026):
+
+| Layanan | Peran | Limit gratis |
+|---|---|---|
+| **Vercel — satu project mode Services** | `frontend` + `backend` dari `vercel.json` root, satu domain bersama | 100 GB transfer/bulan, 1 juta request CDN/m |
+| **Aiven for MySQL (free)** | Database produksi | 1 GB storage, 1 GB RAM, 1 node, tanpa kartu kredit |
+| **Video** (tetap di luar) | URL langsung ke file mp4 | Disarankan Cloudflare R2 (10 GB, egress Rp0) |
+
+> ⚠️ Video **tidak boleh dihosting di Vercel** — 100 GB transfer/bulan akan habis cepat oleh
+> streaming. Film diunduh browser dari S3-compatible/news-egress host seperti R2; admin hanya
+> menyimpan URL.
+
+### 9.1 Akun & pra-siapa
+
+1. Daftar [vercel.com](https://vercel.com) (gratis) dan [aiven.io](https://aiven.io) (gratis).
+2. Windows: `npm i -g vercel` lalu `vercel login` (buka browser untuk OAuth).
+3. Satu URL: pilih **nama project yang unik** karena domain produksi Vercel =
+   `<nama-project>.vercel.app`, misal `streamflix` → `https://streamflix.vercel.app`.
+   Dalam mode Services, **situs dan API berbagi domain ini** (API dilayani di jalur
+   `/api/*`) — tidak ada dua URL lagi.
+   - Bila nama alias sudah dipakai orang lain, Vercel menggunakan URL berbeda — perbaiki
+     `FRONTEND_URL` sesuai URL asli & deploy ulang (lihat §9.7).
+   - Deployment **preview** (per-PR) memakai domain unik sendiri → `FRONTEND_URL` produksi
+     tidak akan cocok; set env tambahan untuk Preview bila Anda aktif memakai preview.
+
+### 9.2 Aiven MySQL
+
+1. Di Aiven console: **Create service → MySQL**, paket **Free**, region default, lalu aktifkan.
+2. Tunggu service `RUNNING`. Salin dari tab **Overview**: `Host`, `Port` (biasanya bukan 3306),
+   `User` (`avnadmin`), `Password`, `Database` (`defaultdb`).
+3. Catat: limit `max_connections` = **76** pada free tier → jaga `DB_CONNECTION_LIMIT` ≤ 5.
+
+### 9.3 Isi database dari laptop (migrasi + admin pertama)
+
+Jalankan di `E:\streamflix\backend`. Ubah hanya `DB_*` (`DB_SSL=1` wajib untuk Aiven) —
+`SESSION_SECRET` tetap dari `backend/.env` lokal (dotenv tidak menimpa env yang sudah diset):
+
+```powershell
+cd E:\streamflix\backend
+$env:DB_HOST='<host-aiven>'; $env:DB_PORT='<port-aiven>'
+$env:DB_NAME='defaultdb'; $env:DB_USER='<user-aiven>'; $env:DB_PASSWORD='<pass-aiven>'
+$env:DB_SSL=1; $env:DB_CONNECTION_LIMIT=5
+npm run db:migrate
+npm run admin:create
+```
+
+> Migrasi **tidak** membuat akun admin — `npm run admin:create` wajib dijalankan. Dan jangan
+> pernah impor ulang `schema.sql` ke database ini (mengosongkan tabel admin/film).
+
+### 9.4 Deploy project (Vercel)
+
+1. Set environment variables project via Dashboard → **Settings → Environment Variables**
+   (Environment = **Production**). Berlaku lintas service:
+
+| Variabel | Nilai |
+|---|---|
+| `NODE_ENV` | `production` |
+| `FRONTEND_URL` | `https://streamflix.vercel.app` — **domain production yang sama** (satu origin); tanpa trailing slash |
+| `DB_HOST` / `DB_PORT` / `DB_NAME` / `DB_USER` / `DB_PASSWORD` | dari Aiven |
+| `DB_SSL` | `1` |
+| `DB_CONNECTION_LIMIT` | `5` |
+| `SESSION_SECRET` | hex acak 64+ karakter (`node -e "console.log(require('crypto').randomBytes(48).toString('hex'))"`) |
+| `COOKIE_SAMESITE` | `lax` — cukup karena browser & API berada di origin yang sama (§4 Strategi 2) |
+| `COOKIE_SECURE` | opsional — otomatis `true` di produksi; eksplisit `true` hanya bila memakai `COOKIE_SAMESITE=none` |
+| `TRUST_PROXY` | `1` |
+| `ALLOWED_VIDEO_HOSTS` | kosong, atau `pub-xxxx.r2.dev` dst. |
+
+2. Deploy dari **root repo** (`E:\streamflix`): `vercel link --project streamflix`, lalu
+   `vercel --prod`. Satu perintah membangun kedua service sesuai `vercel.json` (frontend
+   Vite + backend Express sebagai fungsi Fluid). `VITE_API_BASE_URL` tidak perlu diset —
+   `frontend/.env.production` sudah memakai default same-origin `/api`.
+3. Uji: `curl.exe -s https://streamflix.vercel.app/api/health` → `database: "connected"`.
+4. Bila gagal, cek log: `vercel logs --prod` (penyebab umum: env salah/`DB_SSL` lupa).
+
+> `FRONTEND_URL` menentukan CORS & CSRF: karena satu origin, nilai ini = domain deployment
+> sendiri. Bila nanti Anda memisahkan API ke domain lain, nilai berubah jadi domain frontend
+> dan `COOKIE_SAMESITE=none` + `COOKIE_SECURE=true` menjadi wajib (lihat §4).
+
+### 9.6 Uji end-to-end
+
+- [ ] `https://streamflix.vercel.app` terbuka; refresh dalam rute misal `/movie/<slug>`
+      tidak menghasilkan 404 (fallback SPA di `services.web.rewrites`).
+- [ ] Beranda memuat film published dari DB Aiven (API dilayani `/api/*` di domain sama).
+- [ ] Login admin di halaman `/admin/login` (kredensial dari §9.3) berhasil.
+- [ ] Tambah film dengan URL **direct-link mp4** (mis. dari Cloudflare R2 — lihat catatan
+      di atas) → tampil dan dapat diputar.
+- [ ] Berpindah halaman tidak memunculkan error CORS / 403 CSRF.
+
+### 9.7 Troubleshooting
+
+| Gejala | Penyebab umum | Solusi |
+|---|---|---|
+| Function error saat boot | env hilang/invalid (fail-fast zod) | `vercel logs --prod`; bandingkan dengan daftar §9.4 |
+| `ECONNREFUSED` / `Handshake` error | `DB_SSL` tidak diset milik Aiven, host/port salah | `DB_SSL=1`, cek port khusus Aiven (bukan 3306) |
+| Login gagal / tidak ada cookie | `FRONTEND_URL` ≠ domain deployment | samakan `FRONTEND_URL` dengan URL produksi sebenarnya (tanpa trailing slash) |
+| `403 CSRF_INVALID` | Origin dari frontend tidak diizinkan | `FRONTEND_URL` harus domain production yang digunakan browser (bukan URL preview) |
+| Semua 404 di API | service `api` tidak terbentuk | cek `services.api.framework: "express"` di `vercel.json` root; pastikan `backend/src/index.ts` mengekspor app sebagai default |
+| Semua 404 refresh frontend | fallback SPA tidak aktif | cek `services.web.rewrites` di `vercel.json` root (bukan file `frontend/vercel.json` — sudah dihapus) |
+| Database "auto sleep" | Aiven free mematikan service lama tanpa tindakan | aktifkan via Aiven console (notifikasi dikirim lewat email) |
+
+### 9.8 Catatan gratis-tier
+
+- **Aiven**: service beroperasi selamanya gratis, tetapi dimatikan setelah jangka waktu
+  tidak ada aktivitas (pemberitahuan email); tidak ada HA, dukungan hanya via dokumen.
+- **Vercel Hobby**: transfer 100 GB/bulan (CDN); kurangi risiko memakai cache aset immutabel
+  yang diatur di `services.web.headers` (`vercel.json` root); rate-limit login berbasis
+  memori per instance — batas 5 percobaan per jendela 15 menit berlaku per instance
+  (lebih longgar di produksi).
+- **Region**: fluid function default `iad1` (US). Latensi ke Indonesia ±200 ms per request —
+  masih nyaman untuk API standar; region khusus tersedia di paket kelas atas.

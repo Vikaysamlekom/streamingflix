@@ -29,6 +29,7 @@ export function getPool(): Pool {
       timezone: 'Z',
       dateStrings: false,
       connectTimeout: 10000,
+      ssl: getDatabaseSslOptions(),
     });
   }
   return pool;
@@ -115,7 +116,19 @@ export function createBootstrapConnection(): Promise<mysql.Connection> {
     password: env.DB_PASSWORD,
     multipleStatements: true,
     charset: 'utf8mb4_unicode_ci',
+    ssl: getDatabaseSslOptions(),
   });
+}
+
+/**
+ * Opsi TLS koneksi database.
+ * Daftar layanan MySQL cloud (mis. Aiven free tier) mewajibkan koneksi TLS
+ * (setara `sslmode=require`: terenkripsi, tanpa verifikasi CA). Aktifkan dengan
+ * `DB_SSL=1`; koneksi lokal XAMPP tidak menoleransi TLS, biarkan kosong/0.
+ */
+export function getDatabaseSslOptions(): mysql.SslOptions | undefined {
+  if (!env.DB_SSL) return undefined;
+  return { minVersion: 'TLSv1.2', rejectUnauthorized: false };
 }
 
 /** Tutup pool dengan benar saat shutdown. */
