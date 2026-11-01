@@ -380,6 +380,9 @@ npm run db:migrate
 
 # Buat admin
 npm run admin:create
+
+# Daftar admin (baca-saja — memverifikasi admin ada di DB yang dituju)
+npm run admin:list
 ```
 
 Dokumen terkait: [`ARCHITECTURE.md`](./ARCHITECTURE.md) · [`DATABASE.md`](./DATABASE.md) ·
@@ -437,6 +440,12 @@ npm run admin:create
 
 > Migrasi **tidak** membuat akun admin — `npm run admin:create` wajib dijalankan. Dan jangan
 > pernah impor ulang `schema.sql` ke database ini (mengosongkan tabel admin/film).
+>
+> `admin:create` menulis ke database sesuai env aktif dan **mencetak `DB tujuan:`** di awal
+> eksekusi. Pastikan host-nya **Aiven** — bila tercetak `localhost`, artinya `$env:DB_*`
+> tidak dibawa dan admin terlanjur dibuat ke MySQL lokal XAMPP (penyebab klasik "login
+> production selalu gagal"). Verifikasi isi database dengan `npm run admin:list`
+> (baca-saja) di terminal ber-env yang sama.
 
 ### 9.4 Deploy project (Vercel)
 
@@ -487,6 +496,7 @@ npm run admin:create
 | `403 CSRF_INVALID` | Origin dari frontend tidak diizinkan | `FRONTEND_URL` harus domain production yang digunakan browser (bukan URL preview) |
 | Semua 404 di API | service `api` tidak terbentuk | cek `services.api.framework: "express"` di `vercel.json` root; pastikan `backend/src/index.ts` mengekspor app sebagai default |
 | Semua 404 refresh frontend | fallback SPA tidak aktif | cek `services.web.rewrites` di `vercel.json` root (bukan file `frontend/vercel.json` — sudah dihapus) |
+| Login 401 "email/pw salah" walaupun kredensial benar | Admin tidak ada di DB produksi (umumnya dibuat ke DB lokal — `$env:DB_*` tidak dibawa) | `npm run admin:list` dengan env Aiven → 0 baris: jalankan `admin:create`; >0 tapi password lupa: hapus baris admin via Query Editor Aiven lalu `admin:create` ulang |
 | Database "auto sleep" | Aiven free mematikan service lama tanpa tindakan | aktifkan via Aiven console (notifikasi dikirim lewat email) |
 
 ### 9.8 Catatan gratis-tier

@@ -11,6 +11,7 @@
     "db:migrate": "tsx src/database/migrate.ts",
     "db:generate-schema": "tsx src/scripts/generate-schema.ts",
     "admin:create": "tsx src/scripts/create-admin.ts",
+    "admin:list": "tsx src/scripts/admin-list.ts",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "typecheck": "tsc --noEmit",

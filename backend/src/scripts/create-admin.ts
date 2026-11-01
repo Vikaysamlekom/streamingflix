@@ -1,5 +1,6 @@
 import readline from 'readline';
 import 'dotenv/config';
+import { env } from '../config/env';
 import { closePool } from '../config/database';
 import {
   findByEmail,
@@ -106,6 +107,10 @@ async function main(): Promise<void> {
 
   try {
     console.log('\n=== StreamFlix — Buat Akun Admin ===\n');
+
+    // Transparansi: tunjukkan database mana yang akan ditulisi,
+    // agar tak pernah salah logika "admin dibuat ke DB lokal saat menandai produksi".
+    console.log(`DB tujuan : ${env.DB_HOST}:${env.DB_PORT}/${env.DB_NAME}\n`);
 
     const existing = await countAdmins();
     if (existing > 0) {
