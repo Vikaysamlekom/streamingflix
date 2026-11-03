@@ -121,3 +121,11 @@ export function createApp(): Express {
 
   return app;
 }
+
+/**
+ * Default export untuk deployment Vercel.
+ * Deteksi otomatis Express memilih file `app.*` sebagai entry function dan
+ * mewajibkan default export berupa instance Express (bukan hanya factory).
+ * Instance dibuat sekali per proses.
+ */
+export default createApp();

@@ -3,6 +3,7 @@ import { join, resolve } from 'path';
 import mysql from 'mysql2/promise';
 import 'dotenv/config';
 import { env } from '../config/env';
+import { getDatabaseSslOptions } from '../config/database';
 
 /**
  * Runner migrasi database (sumber migrasi TUNGGAL: database/migrations/).
@@ -24,6 +25,7 @@ async function ensureDatabase(): Promise<void> {
     user: env.DB_USER,
     password: env.DB_PASSWORD,
     multipleStatements: true,
+    ssl: getDatabaseSslOptions(),
   });
 
   await conn.query(
@@ -66,6 +68,7 @@ async function run(): Promise<void> {
     database: env.DB_NAME,
     multipleStatements: true,
     charset: 'utf8mb4_unicode_ci',
+    ssl: getDatabaseSslOptions(),
   });
 
   try {
