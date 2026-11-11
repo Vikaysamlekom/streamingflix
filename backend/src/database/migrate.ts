@@ -25,6 +25,7 @@ async function ensureDatabase(): Promise<void> {
     user: env.DB_USER,
     password: env.DB_PASSWORD,
     multipleStatements: true,
+    connectTimeout: 30000,
     ssl: getDatabaseSslOptions(),
   });
 
@@ -68,6 +69,7 @@ async function run(): Promise<void> {
     database: env.DB_NAME,
     multipleStatements: true,
     charset: 'utf8mb4_unicode_ci',
+    connectTimeout: 30000,
     ssl: getDatabaseSslOptions(),
   });
 

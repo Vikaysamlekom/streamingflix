@@ -28,7 +28,9 @@ export function getPool(): Pool {
       charset: 'utf8mb4_unicode_ci',
       timezone: 'Z',
       dateStrings: false,
-      connectTimeout: 10000,
+      // DNS pertama ke host cloud bisa >10 detik (resolver lokal lambat);
+      // default mysql2 10000ms terlalu ketat → ETIMEDOUT palsu.
+      connectTimeout: 30000,
       ssl: getDatabaseSslOptions(),
     });
   }
@@ -115,6 +117,7 @@ export function createBootstrapConnection(): Promise<mysql.Connection> {
     user: env.DB_USER,
     password: env.DB_PASSWORD,
     multipleStatements: true,
+    connectTimeout: 30000,
     charset: 'utf8mb4_unicode_ci',
     ssl: getDatabaseSslOptions(),
   });

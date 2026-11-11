@@ -53,6 +53,7 @@ export function createSessionMiddleware(): RequestHandler {
     user: env.DB_USER,
     password: env.DB_PASSWORD,
     database: env.DB_NAME,
+    connectTimeout: 30000,
     ssl: getDatabaseSslOptions(),
     clearExpired: true,
     checkExpirationInterval: 15 * 60 * 1000, // bersihkan tiap 15 menit
