@@ -73,8 +73,11 @@ function buildUrl(
   path: string,
   query?: RequestOptions['query'],
 ): string {
+  // API_BASE_URL bisa relatif ("/api" di produksi) — new URL() butuh base absolut.
+  // window.location.origin dipakai sebagai base; URL absolut tetap diabaikan base-nya.
   const url = new URL(
     `${API_BASE_URL}${path.startsWith('/') ? path : `/${path}`}`,
+    window.location.origin,
   );
   if (query) {
     for (const [key, value] of Object.entries(query)) {
