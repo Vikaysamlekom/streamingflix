@@ -90,3 +90,6 @@ frontend/.vite
 
 # Local dev
 *.local.json
+
+.vercel
+.env*
