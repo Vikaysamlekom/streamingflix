@@ -66,6 +66,7 @@ const adsSchema = z.object({
   adDetailTop: z.string().max(20000, 'Kode terlalu panjang (maks. 20000 karakter)'),
   adDetailBelow: z.string().max(20000, 'Kode terlalu panjang (maks. 20000 karakter)'),
   adDetailBottom: z.string().max(20000, 'Kode terlalu panjang (maks. 20000 karakter)'),
+  adInterstitial: z.string().max(20000, 'Kode terlalu panjang (maks. 20000 karakter)'),
 });
 
 type AdsFormValues = z.infer<typeof adsSchema>;
@@ -297,6 +298,7 @@ function AdsPanel({ loading, settings }: SitePanelProps) {
       adDetailTop: '',
       adDetailBelow: '',
       adDetailBottom: '',
+      adInterstitial: '',
     },
   });
 
@@ -310,6 +312,7 @@ function AdsPanel({ loading, settings }: SitePanelProps) {
       adDetailTop: settings.adDetailTop,
       adDetailBelow: settings.adDetailBelow,
       adDetailBottom: settings.adDetailBottom,
+      adInterstitial: settings.adInterstitial,
     });
   }, [settings, reset]);
 
@@ -412,6 +415,13 @@ function AdsPanel({ loading, settings }: SitePanelProps) {
         hint="Setelah daftar Film Serupa. Cocok untuk Banner 300×250."
         error={errors.adDetailBottom?.message}
         {...register('adDetailBottom')}
+      />
+      <Textarea
+        label="Overlay — Saat Klik Poster / Putar Sekarang"
+        rows={4}
+        hint="Iklan layar penuh muncul sebelum user pindah halaman (maks. 1× per 60 detik). Cocok untuk unit banner/native baru. Kosongkan untuk menonaktifkan."
+        error={errors.adInterstitial?.message}
+        {...register('adInterstitial')}
       />
 
       <div className="flex justify-end">

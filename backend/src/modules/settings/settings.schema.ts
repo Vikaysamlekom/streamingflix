@@ -32,6 +32,8 @@ export const siteSettingsSchema = z.object({
   adDetailTop: z.string().trim().max(20000).optional().or(z.literal('')),
   adDetailBelow: z.string().trim().max(20000).optional().or(z.literal('')),
   adDetailBottom: z.string().trim().max(20000).optional().or(z.literal('')),
+  // Overlay interstitial: muncul saat user klik poster / "Putar Sekarang".
+  adInterstitial: z.string().trim().max(20000).optional().or(z.literal('')),
 });
 
 export type SiteSettingsInput = z.infer<typeof siteSettingsSchema>;
@@ -53,4 +55,5 @@ export const SETTINGS_KEY_MAP = {
   adDetailTop: 'ad_detail_top',
   adDetailBelow: 'ad_detail_below',
   adDetailBottom: 'ad_detail_bottom',
+  adInterstitial: 'ad_interstitial',
 } as const;

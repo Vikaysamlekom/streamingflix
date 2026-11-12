@@ -3,6 +3,7 @@ import { Outlet, useLocation } from 'react-router-dom';
 import { Navbar } from '@/components/layout/Navbar';
 import { Footer } from '@/components/layout/Footer';
 import { AdHeaderCode } from '@/components/ads/AdSlot';
+import { AdInterstitial } from '@/components/ads/AdInterstitial';
 import { usePublicSettings } from '@/features/movies/hooks/use-catalog';
 
 /** Mengembalikan posisi scroll ke atas saat rute berubah. */
@@ -21,6 +22,8 @@ export function PublicLayout() {
   return (
     <div className="flex min-h-screen flex-col">
       <AdHeaderCode code={settings?.ads?.header} />
+      {/* Overlay iklan saat klik poster / "Putar Sekarang". */}
+      <AdInterstitial />
       <a
         href="#main-content"
         className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-[100] focus:rounded-md focus:bg-accent focus:px-4 focus:py-2 focus:text-accent-contrast"

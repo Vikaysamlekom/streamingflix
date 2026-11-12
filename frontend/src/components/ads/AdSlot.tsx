@@ -115,7 +115,8 @@ type AdPosition =
   | 'watchBelow'
   | 'detailTop'
   | 'detailBelow'
-  | 'detailBottom';
+  | 'detailBottom'
+  | 'interstitial';
 
 /**
  * Slot iklan berdasar pengaturan publik — cukup sebutkan posisinya.

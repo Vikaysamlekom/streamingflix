@@ -143,6 +143,8 @@ export interface SiteSettings {
   adDetailTop: string;
   adDetailBelow: string;
   adDetailBottom: string;
+  /** Overlay interstitial: klik poster / "Putar Sekarang". */
+  adInterstitial: string;
 }
 
 export interface SystemInfo {

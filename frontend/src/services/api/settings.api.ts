@@ -21,6 +21,8 @@ export interface PublicSettings {
     detailTop: string;
     detailBelow: string;
     detailBottom: string;
+    /** Overlay interstitial (klik poster / Putar Sekarang). */
+    interstitial: string;
   };
 }
 
