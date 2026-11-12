@@ -23,6 +23,13 @@ export const siteSettingsSchema = z.object({
   socialInstagram: z.string().trim().max(2048).optional().or(z.literal('')),
   socialTwitter: z.string().trim().max(2048).optional().or(z.literal('')),
   socialYoutube: z.string().trim().max(2048).optional().or(z.literal('')),
+  // Kode iklan (HTML mentah dari jaringan iklan). Hanya admin yang dapat
+  // mengubahnya; script yang dirender berasal dari input admin tepercaya.
+  adHeaderCode: z.string().trim().max(20000).optional().or(z.literal('')),
+  adHomeTop: z.string().trim().max(20000).optional().or(z.literal('')),
+  adHomeMid: z.string().trim().max(20000).optional().or(z.literal('')),
+  adWatchBelow: z.string().trim().max(20000).optional().or(z.literal('')),
+  adDetailBelow: z.string().trim().max(20000).optional().or(z.literal('')),
 });
 
 export type SiteSettingsInput = z.infer<typeof siteSettingsSchema>;
@@ -37,4 +44,9 @@ export const SETTINGS_KEY_MAP = {
   socialInstagram: 'social_instagram',
   socialTwitter: 'social_twitter',
   socialYoutube: 'social_youtube',
+  adHeaderCode: 'ad_header_code',
+  adHomeTop: 'ad_home_top',
+  adHomeMid: 'ad_home_mid',
+  adWatchBelow: 'ad_watch_below',
+  adDetailBelow: 'ad_detail_below',
 } as const;

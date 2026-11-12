@@ -135,6 +135,12 @@ export interface SiteSettings {
   socialInstagram: string;
   socialTwitter: string;
   socialYoutube: string;
+  /** Kode HTML iklan per posisi (dari jaringan iklan). */
+  adHeaderCode: string;
+  adHomeTop: string;
+  adHomeMid: string;
+  adWatchBelow: string;
+  adDetailBelow: string;
 }
 
 export interface SystemInfo {

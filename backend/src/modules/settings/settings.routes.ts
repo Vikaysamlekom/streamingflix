@@ -47,6 +47,11 @@ function toApiSettings(map: Record<string, string>): SiteSettingsInput {
     socialInstagram: read('socialInstagram', ''),
     socialTwitter: read('socialTwitter', ''),
     socialYoutube: read('socialYoutube', ''),
+    adHeaderCode: read('adHeaderCode', ''),
+    adHomeTop: read('adHomeTop', ''),
+    adHomeMid: read('adHomeMid', ''),
+    adWatchBelow: read('adWatchBelow', ''),
+    adDetailBelow: read('adDetailBelow', ''),
   };
 }
 
@@ -90,6 +95,19 @@ adminSettingsRouter.put(
       [SETTINGS_KEY_MAP.socialYoutube, payload.socialYoutube ?? ''],
     ];
 
+    // Field iklan bersifat opsional: hanya ditulis bila dikirim dalam request,
+    // agar menyimpan tab Situs tidak menghapus kode iklan yang sudah ada.
+    const adEntries: [string, string | undefined][] = [
+      [SETTINGS_KEY_MAP.adHeaderCode, payload.adHeaderCode],
+      [SETTINGS_KEY_MAP.adHomeTop, payload.adHomeTop],
+      [SETTINGS_KEY_MAP.adHomeMid, payload.adHomeMid],
+      [SETTINGS_KEY_MAP.adWatchBelow, payload.adWatchBelow],
+      [SETTINGS_KEY_MAP.adDetailBelow, payload.adDetailBelow],
+    ];
+    for (const [key, value] of adEntries) {
+      if (value !== undefined) entries.push([key, value]);
+    }
+
     for (const [key, value] of entries) {
       await getPool().execute(
         `INSERT INTO site_settings (\`key\`, \`value\`) VALUES (?, ?)
@@ -127,6 +145,14 @@ publicSettingsRouter.get(
         instagram: settings.socialInstagram,
         twitter: settings.socialTwitter,
         youtube: settings.socialYoutube,
+      },
+      // Kode iklan memang harus publik: script-nya dieksekusi di browser.
+      ads: {
+        header: settings.adHeaderCode,
+        homeTop: settings.adHomeTop,
+        homeMid: settings.adHomeMid,
+        watchBelow: settings.adWatchBelow,
+        detailBelow: settings.adDetailBelow,
       },
     });
   }),

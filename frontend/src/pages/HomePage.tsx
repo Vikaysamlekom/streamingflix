@@ -8,6 +8,7 @@ import { PosterCard } from '@/components/movies/PosterCard';
 import { Top10Card } from '@/components/movies/Top10Card';
 import { RowSkeleton, Skeleton } from '@/components/ui/Skeleton';
 import { ErrorState, EmptyState } from '@/components/feedback/States';
+import { AdSlotFromSettings } from '@/components/ads/AdSlot';
 import { useHome, usePublicSettings } from '@/features/movies/hooks/use-catalog';
 
 /** Halaman Beranda: hero + baris konten. */
@@ -69,6 +70,9 @@ export function HomePage() {
       </div>
 
       <div className="mx-auto mt-10 max-w-[1400px] space-y-10 px-4 sm:px-6 lg:px-8">
+        {/* Iklan: banner atas beranda */}
+        <AdSlotFromSettings position="homeTop" className="flex justify-center" />
+
         {/* Lanjutkan Menonton (localStorage) */}
         <ContinueWatchingRow />
 
@@ -120,6 +124,9 @@ export function HomePage() {
             ))}
           </MovieRow>
         ) : null}
+
+        {/* Iklan: banner tengah beranda */}
+        <AdSlotFromSettings position="homeMid" className="flex justify-center" />
 
         {/* Baris per genre */}
         {data.genreRows.map((row) => (

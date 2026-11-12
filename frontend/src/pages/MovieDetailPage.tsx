@@ -9,6 +9,7 @@ import { ErrorState } from '@/components/feedback/States';
 import { MovieRow } from '@/components/movies/MovieRow';
 import { PosterCard } from '@/components/movies/PosterCard';
 import { MyListButton } from '@/features/my-list/MyListButton';
+import { AdSlotFromSettings } from '@/components/ads/AdSlot';
 import { useMovie, useMovies } from '@/features/movies/hooks/use-catalog';
 import { formatDuration, formatViews } from '@/utils/format';
 
@@ -137,6 +138,12 @@ export function MovieDetailPage() {
           </div>
         </div>
       </div>
+
+      {/* Iklan: di bawah sinopsis, sebelum film serupa */}
+      <AdSlotFromSettings
+        position="detailBelow"
+        className="mx-auto mt-4 flex max-w-[1400px] justify-center px-4 sm:px-6 lg:px-8"
+      />
 
       {/* Film serupa */}
       {related.length > 0 ? (

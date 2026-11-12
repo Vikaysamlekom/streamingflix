@@ -15,10 +15,11 @@ import { useAuth } from '@/features/admin/auth/AuthContext';
 import type { SiteSettings } from '@/types';
 import { cn } from '@/utils/cn';
 
-type TabKey = 'site' | 'security' | 'system';
+type TabKey = 'site' | 'ads' | 'security' | 'system';
 
 const TABS: { key: TabKey; label: string }[] = [
   { key: 'site', label: 'Situs' },
+  { key: 'ads', label: 'Iklan' },
   { key: 'security', label: 'Keamanan Akun' },
   { key: 'system', label: 'Info Sistem' },
 ];
@@ -56,6 +57,16 @@ const passwordSchema = z
   });
 
 type PasswordFormValues = z.infer<typeof passwordSchema>;
+
+const adsSchema = z.object({
+  adHeaderCode: z.string().max(20000, 'Kode terlalu panjang (maks. 20000 karakter)'),
+  adHomeTop: z.string().max(20000, 'Kode terlalu panjang (maks. 20000 karakter)'),
+  adHomeMid: z.string().max(20000, 'Kode terlalu panjang (maks. 20000 karakter)'),
+  adWatchBelow: z.string().max(20000, 'Kode terlalu panjang (maks. 20000 karakter)'),
+  adDetailBelow: z.string().max(20000, 'Kode terlalu panjang (maks. 20000 karakter)'),
+});
+
+type AdsFormValues = z.infer<typeof adsSchema>;
 
 export function SettingsManager() {
   const [activeTab, setActiveTab] = useState<TabKey>('site');
@@ -107,6 +118,8 @@ export function SettingsManager() {
         />
       ) : activeTab === 'security' ? (
         <SecurityPanel />
+      ) : activeTab === 'ads' ? (
+        <AdsPanel loading={settingsQuery.isLoading} settings={settings} />
       ) : (
         <SitePanel loading={settingsQuery.isLoading} settings={settings} />
       )}
@@ -249,6 +262,136 @@ function SitePanel({ loading, settings }: SitePanelProps) {
           {...register('socialYoutube')}
         />
       </div>
+
+      <div className="flex justify-end">
+        <Button
+          type="submit"
+          loading={isSubmitting || updateMutation.isPending}
+        >
+          Simpan
+        </Button>
+      </div>
+    </form>
+  );
+}
+
+/** Panel iklan: tempel kode dari jaringan iklan (Adsterra, dll.). */
+function AdsPanel({ loading, settings }: SitePanelProps) {
+  const queryClient = useQueryClient();
+  const { success, error: showError } = useToast();
+
+  const {
+    register,
+    handleSubmit,
+    reset,
+    formState: { errors, isSubmitting },
+  } = useForm<AdsFormValues>({
+    resolver: zodResolver(adsSchema),
+    defaultValues: {
+      adHeaderCode: '',
+      adHomeTop: '',
+      adHomeMid: '',
+      adWatchBelow: '',
+      adDetailBelow: '',
+    },
+  });
+
+  useEffect(() => {
+    if (!settings) return;
+    reset({
+      adHeaderCode: settings.adHeaderCode,
+      adHomeTop: settings.adHomeTop,
+      adHomeMid: settings.adHomeMid,
+      adWatchBelow: settings.adWatchBelow,
+      adDetailBelow: settings.adDetailBelow,
+    });
+  }, [settings, reset]);
+
+  const updateMutation = useMutation({
+    mutationFn: (values: AdsFormValues) =>
+      // Endpoint mewajibkan field dasar ikut dikirim — sertakan nilai lama.
+      adminSettingsApi.update({
+        siteName: settings?.siteName ?? 'StreamFlix',
+        tagline: settings?.tagline ?? '',
+        seoDescription: settings?.seoDescription ?? '',
+        heroSlideLimit: settings?.heroSlideLimit ?? 5,
+        socialFacebook: settings?.socialFacebook ?? '',
+        socialInstagram: settings?.socialInstagram ?? '',
+        socialTwitter: settings?.socialTwitter ?? '',
+        socialYoutube: settings?.socialYoutube ?? '',
+        ...values,
+      }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['admin', 'settings'] });
+      void queryClient.invalidateQueries({ queryKey: ['settings'] });
+      success('Pengaturan iklan berhasil disimpan.');
+    },
+    onError: (err) => {
+      showError(
+        err instanceof ApiRequestError
+          ? err.message
+          : 'Gagal menyimpan pengaturan iklan.',
+      );
+    },
+  });
+
+  const onSubmit = handleSubmit((values) => {
+    updateMutation.mutate(values);
+  });
+
+  if (loading) {
+    return <Skeleton className="h-96 w-full" />;
+  }
+
+  return (
+    <form
+      onSubmit={onSubmit}
+      className="flex max-w-3xl flex-col gap-5 rounded-[var(--radius-card)] border border-border bg-surface p-5"
+      noValidate
+    >
+      <div className="rounded-[var(--radius-button)] border border-border bg-background px-4 py-3">
+        <p className="text-sm text-text-muted">
+          Tempel kode iklan (HTML) dari jaringan iklan Anda di posisi yang
+          sesuai. Kosongkan untuk menyembunyikan iklan. Perubahan langsung
+          aktif tanpa deploy ulang.
+        </p>
+      </div>
+
+      <Textarea
+        label="Script Global (Header)"
+        rows={4}
+        hint="Script sekali jalan untuk seluruh halaman — mis. social bar / push script."
+        error={errors.adHeaderCode?.message}
+        {...register('adHeaderCode')}
+      />
+      <Textarea
+        label="Beranda — Banner Atas"
+        rows={4}
+        hint="Di bawah hero, sebelum daftar film."
+        error={errors.adHomeTop?.message}
+        {...register('adHomeTop')}
+      />
+      <Textarea
+        label="Beranda — Banner Tengah"
+        rows={4}
+        hint="Di tengah beranda (setelah Top 10)."
+        error={errors.adHomeMid?.message}
+        {...register('adHomeMid')}
+      />
+      <Textarea
+        label="Halaman Tonton — Di Bawah Player"
+        rows={4}
+        hint="Paling sering terlihat; posisi CPM tertinggi."
+        error={errors.adWatchBelow?.message}
+        {...register('adWatchBelow')}
+      />
+      <Textarea
+        label="Detail Film — Di Bawah Sinopsis"
+        rows={4}
+        hint="Sebelum daftar Film Serupa."
+        error={errors.adDetailBelow?.message}
+        {...register('adDetailBelow')}
+      />
 
       <div className="flex justify-end">
         <Button

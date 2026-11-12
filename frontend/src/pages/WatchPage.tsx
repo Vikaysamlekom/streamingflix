@@ -8,6 +8,7 @@ import { Skeleton } from '@/components/ui/Skeleton';
 import { ErrorState } from '@/components/feedback/States';
 import { MovieRow } from '@/components/movies/MovieRow';
 import { PosterCard } from '@/components/movies/PosterCard';
+import { AdSlotFromSettings } from '@/components/ads/AdSlot';
 import { useMovie, useMovies } from '@/features/movies/hooks/use-catalog';
 import { moviesApi } from '@/services/api/movies.api';
 import { useToast } from '@/components/ui/Toast';
@@ -104,6 +105,9 @@ export function WatchPage() {
           Sumber video belum tersedia untuk film ini.
         </div>
       )}
+
+      {/* Iklan: tepat di bawah player */}
+      <AdSlotFromSettings position="watchBelow" className="mt-6 flex justify-center" />
 
       <div className="mt-6">
         <h1 className="text-2xl font-extrabold tracking-tight text-text-primary sm:text-3xl">

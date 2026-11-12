@@ -2,6 +2,8 @@ import { useEffect } from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
 import { Navbar } from '@/components/layout/Navbar';
 import { Footer } from '@/components/layout/Footer';
+import { AdHeaderCode } from '@/components/ads/AdSlot';
+import { usePublicSettings } from '@/features/movies/hooks/use-catalog';
 
 /** Mengembalikan posisi scroll ke atas saat rute berubah. */
 function ScrollToTop() {
@@ -14,8 +16,11 @@ function ScrollToTop() {
 
 /** Layout situs publik: Navbar + konten + Footer. */
 export function PublicLayout() {
+  const { data: settings } = usePublicSettings();
+
   return (
     <div className="flex min-h-screen flex-col">
+      <AdHeaderCode code={settings?.ads?.header} />
       <a
         href="#main-content"
         className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-[100] focus:rounded-md focus:bg-accent focus:px-4 focus:py-2 focus:text-accent-contrast"

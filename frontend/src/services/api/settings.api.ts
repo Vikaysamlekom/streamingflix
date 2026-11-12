@@ -12,6 +12,14 @@ export interface PublicSettings {
     twitter: string;
     youtube: string;
   };
+  /** Kode HTML iklan per posisi (dieksekusi di browser). */
+  ads: {
+    header: string;
+    homeTop: string;
+    homeMid: string;
+    watchBelow: string;
+    detailBelow: string;
+  };
 }
 
 export const settingsApi = {
