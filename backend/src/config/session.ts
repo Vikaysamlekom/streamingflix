@@ -55,6 +55,12 @@ export function createSessionMiddleware(): RequestHandler {
     database: env.DB_NAME,
     connectTimeout: 30000,
     ssl: getDatabaseSslOptions(),
+    // Batasi pool sesi agar hemat koneksi (Aiven free tier: max_connections=46
+    // dibagi ke semua instance Vercel). maxIdle < connectionLimit agar
+    // pembersih idle mysql2 aktif — koneksi bebas ditutup setelah 60 detik.
+    connectionLimit: 3,
+    maxIdle: 1,
+    idleTimeout: 60000,
     clearExpired: true,
     checkExpirationInterval: 15 * 60 * 1000, // bersihkan tiap 15 menit
     expiration: maxAgeMs,

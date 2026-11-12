@@ -20,7 +20,12 @@ export function getPool(): Pool {
       database: env.DB_NAME,
       waitForConnections: true,
       connectionLimit: env.DB_CONNECTION_LIMIT,
-      maxIdle: env.DB_CONNECTION_LIMIT,
+      // mysql2 HANYA menjalankan pembersih koneksi idle bila maxIdle <
+      // connectionLimit (lihat BasePool constructor). Dengan maxIdle == limit,
+      // pembersih tak pernah aktif dan koneksi idle menumpuk di tiap instance
+      // Vercel → memenuhi batas 46 koneksi Aiven. Simpan maks. 1 koneksi
+      // hangat; sisanya ditutup setelah 60 detik tidak terpakai.
+      maxIdle: env.DB_CONNECTION_LIMIT > 1 ? 1 : 0,
       idleTimeout: 60000,
       queueLimit: 0,
       enableKeepAlive: true,
