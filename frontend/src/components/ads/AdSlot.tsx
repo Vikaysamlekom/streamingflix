@@ -1,31 +1,62 @@
 import { useEffect, useRef } from 'react';
 import { usePublicSettings } from '@/features/movies/hooks/use-catalog';
 
+/** Batas waktu muat script eksternal agar rantai injeksi tidak tersendat. */
+const SCRIPT_LOAD_TIMEOUT_MS = 8000;
+
 /**
- * Sisipkan HTML kode iklan ke dalam container dan eksekusi script-nya.
+ * Sisipkan HTML kode iklan ke container dan eksekusi script-nya.
  *
  * `innerHTML`/`dangerouslySetInnerHTML` TIDAK mengeksekusi <script>, jadi
  * setiap script dibuat ulang dengan createElement lalu di-append — cara ini
  * yang membuat kode iklan (Adsterra, dll.) benar-benar berjalan.
+ *
+ * Penting: script eksternal DITUNGGU selesai sebelum node berikutnya
+ * disisipkan. Jaringan iklan memakai pola global `atOptions` (inline) lalu
+ * `invoke.js` (eksternal); tanpa penungguan ini, banner kedua akan menimpa
+ * kode banner pertama dan kedua slot menampilkan unit yang sama.
  */
-function injectHtml(container: HTMLElement, html: string): void {
+async function injectHtml(
+  container: HTMLElement,
+  html: string,
+  isCancelled?: () => boolean,
+): Promise<void> {
   const temp = document.createElement('div');
   temp.innerHTML = html;
 
   for (const node of Array.from(temp.childNodes)) {
+    if (isCancelled?.()) return;
+
     if (node.nodeType === Node.ELEMENT_NODE && (node as Element).tagName === 'SCRIPT') {
       const old = node as HTMLScriptElement;
       const script = document.createElement('script');
       for (const attr of Array.from(old.attributes)) {
         script.setAttribute(attr.name, attr.value);
       }
+
       if (old.src) {
-        // Pertahankan urutan eksekusi antar script eksternal.
-        if (!old.hasAttribute('async')) script.async = false;
+        await new Promise<void>((resolve) => {
+          let settled = false;
+          const finish = () => {
+            if (settled) return;
+            settled = true;
+            clearTimeout(timer);
+            resolve();
+          };
+          const timer = setTimeout(finish, SCRIPT_LOAD_TIMEOUT_MS);
+          script.onload = finish;
+          script.onerror = finish;
+          if (isCancelled?.()) {
+            finish();
+            return;
+          }
+          container.appendChild(script);
+        });
       } else {
+        // Script inline: dieksekusi sinkron saat di-append.
         script.textContent = old.textContent;
+        container.appendChild(script);
       }
-      container.appendChild(script);
     } else {
       container.appendChild(document.importNode(node, true));
     }
@@ -56,9 +87,11 @@ export function AdSlot({ code, name, className, minHeight = 90 }: AdSlotProps) {
     container.replaceChildren();
     if (!html) return;
 
-    injectHtml(container, html);
+    let cancelled = false;
+    void injectHtml(container, html, () => cancelled);
 
     return () => {
+      cancelled = true;
       container.replaceChildren();
     };
   }, [html]);
@@ -76,14 +109,22 @@ export function AdSlot({ code, name, className, minHeight = 90 }: AdSlotProps) {
   );
 }
 
+type AdPosition =
+  | 'homeTop'
+  | 'homeMid'
+  | 'watchBelow'
+  | 'detailTop'
+  | 'detailBelow'
+  | 'detailBottom';
+
 /**
  * Slot iklan berdasar pengaturan publik — cukup sebutkan posisinya.
- * Contoh: <AdSlotFromSettings position="homeTop" />
+ * Contoh: <AdSlotFromSettings position="detailTop" />
  */
 export function AdSlotFromSettings({
   position,
   ...props
-}: { position: 'homeTop' | 'homeMid' | 'watchBelow' | 'detailBelow' } & Omit<AdSlotProps, 'code' | 'name'>) {
+}: { position: AdPosition } & Omit<AdSlotProps, 'code' | 'name'>) {
   const { data: settings } = usePublicSettings();
   return <AdSlot code={settings?.ads?.[position]} name={position} {...props} />;
 }
@@ -92,44 +133,80 @@ interface AdHeaderCodeProps {
   code?: string;
 }
 
-/** Script iklan tingkat halaman (mis. social bar/push) — disuntik ke <head> sekali. */
+// Penanda injeksi tingkat halaman (module-level agar tetap ada lintas mount).
+let adHeaderInjected: string | null = null;
+let adHeaderGeneration = 0;
+
+/**
+ * Script iklan tingkat halaman (Popunder, Social Bar, Smart Link).
+ * Script disuntik ke <head>; elemen tampil (div, tautan) ke <body>.
+ * Semua node ditandai `data-streamflix-ad-header` agar bisa dilepas saat
+ * kode diubah. Menggunakan penomoran generasi agar injeksi lama yang masih
+ * berjalan berhenti ketika kode berganti.
+ */
 export function AdHeaderCode({ code }: AdHeaderCodeProps) {
   const html = code?.trim() ?? '';
-  const lastInjected = useRef<string | null>(null);
 
   useEffect(() => {
-    if (lastInjected.current === html) return;
+    if (adHeaderInjected === html) return;
 
-    // Lepas script lama bila kode berubah.
-    document.head
-      .querySelectorAll('script[data-streamflix-ad-header]')
-      .forEach((s) => s.remove());
+    adHeaderInjected = html;
+    const myGeneration = ++adHeaderGeneration;
 
-    lastInjected.current = html;
+    // Lepas injeksi lama (script maupun elemen yang ditandai).
+    document
+      .querySelectorAll('[data-streamflix-ad-header]')
+      .forEach((el) => el.remove());
+
     if (!html) return;
 
-    // Sisipkan langsung ke <head> (tanpa kontainer sementara agar script
-    // eksternal tidak berpindah node saat masih dimuat).
-    const temp = document.createElement('div');
-    temp.innerHTML = html;
-    for (const node of Array.from(temp.childNodes)) {
-      if (node.nodeType === Node.ELEMENT_NODE && (node as Element).tagName === 'SCRIPT') {
-        const old = node as HTMLScriptElement;
-        const script = document.createElement('script');
-        for (const attr of Array.from(old.attributes)) {
-          script.setAttribute(attr.name, attr.value);
-        }
-        if (old.src) {
-          if (!old.hasAttribute('async')) script.async = false;
+    void (async () => {
+      const temp = document.createElement('div');
+      temp.innerHTML = html;
+
+      for (const node of Array.from(temp.childNodes)) {
+        // Kode sudah berganti / generasi baru — hentikan rantai lama.
+        if (adHeaderGeneration !== myGeneration) return;
+
+        if (node.nodeType === Node.ELEMENT_NODE && (node as Element).tagName === 'SCRIPT') {
+          const old = node as HTMLScriptElement;
+          const script = document.createElement('script');
+          for (const attr of Array.from(old.attributes)) {
+            script.setAttribute(attr.name, attr.value);
+          }
+          script.setAttribute('data-streamflix-ad-header', '');
+
+          if (old.src) {
+            await new Promise<void>((resolve) => {
+              let settled = false;
+              const finish = () => {
+                if (settled) return;
+                settled = true;
+                clearTimeout(timer);
+                resolve();
+              };
+              const timer = setTimeout(finish, SCRIPT_LOAD_TIMEOUT_MS);
+              script.onload = finish;
+              script.onerror = finish;
+              if (adHeaderGeneration !== myGeneration) {
+                finish();
+                return;
+              }
+              document.head.appendChild(script);
+            });
+          } else {
+            script.textContent = old.textContent;
+            document.head.appendChild(script);
+          }
         } else {
-          script.textContent = old.textContent;
+          // Elemen tampil (div, tautan) harus masuk <body> agar terlihat —
+          // konten <head> tidak dirender browser.
+          const el = document.importNode(node, true) as Element;
+          el.setAttribute('data-streamflix-ad-header', '');
+          document.body.appendChild(el);
         }
-        script.setAttribute('data-streamflix-ad-header', '');
-        document.head.appendChild(script);
-      } else {
-        document.head.appendChild(document.importNode(node, true));
       }
-    }
+    })();
   }, [html]);
 
   return null;

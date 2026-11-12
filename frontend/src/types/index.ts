@@ -140,7 +140,9 @@ export interface SiteSettings {
   adHomeTop: string;
   adHomeMid: string;
   adWatchBelow: string;
+  adDetailTop: string;
   adDetailBelow: string;
+  adDetailBottom: string;
 }
 
 export interface SystemInfo {

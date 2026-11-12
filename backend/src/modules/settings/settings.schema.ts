@@ -29,7 +29,9 @@ export const siteSettingsSchema = z.object({
   adHomeTop: z.string().trim().max(20000).optional().or(z.literal('')),
   adHomeMid: z.string().trim().max(20000).optional().or(z.literal('')),
   adWatchBelow: z.string().trim().max(20000).optional().or(z.literal('')),
+  adDetailTop: z.string().trim().max(20000).optional().or(z.literal('')),
   adDetailBelow: z.string().trim().max(20000).optional().or(z.literal('')),
+  adDetailBottom: z.string().trim().max(20000).optional().or(z.literal('')),
 });
 
 export type SiteSettingsInput = z.infer<typeof siteSettingsSchema>;
@@ -48,5 +50,7 @@ export const SETTINGS_KEY_MAP = {
   adHomeTop: 'ad_home_top',
   adHomeMid: 'ad_home_mid',
   adWatchBelow: 'ad_watch_below',
+  adDetailTop: 'ad_detail_top',
   adDetailBelow: 'ad_detail_below',
+  adDetailBottom: 'ad_detail_bottom',
 } as const;

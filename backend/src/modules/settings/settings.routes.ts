@@ -51,7 +51,9 @@ function toApiSettings(map: Record<string, string>): SiteSettingsInput {
     adHomeTop: read('adHomeTop', ''),
     adHomeMid: read('adHomeMid', ''),
     adWatchBelow: read('adWatchBelow', ''),
+    adDetailTop: read('adDetailTop', ''),
     adDetailBelow: read('adDetailBelow', ''),
+    adDetailBottom: read('adDetailBottom', ''),
   };
 }
 
@@ -102,7 +104,9 @@ adminSettingsRouter.put(
       [SETTINGS_KEY_MAP.adHomeTop, payload.adHomeTop],
       [SETTINGS_KEY_MAP.adHomeMid, payload.adHomeMid],
       [SETTINGS_KEY_MAP.adWatchBelow, payload.adWatchBelow],
+      [SETTINGS_KEY_MAP.adDetailTop, payload.adDetailTop],
       [SETTINGS_KEY_MAP.adDetailBelow, payload.adDetailBelow],
+      [SETTINGS_KEY_MAP.adDetailBottom, payload.adDetailBottom],
     ];
     for (const [key, value] of adEntries) {
       if (value !== undefined) entries.push([key, value]);
@@ -152,7 +156,9 @@ publicSettingsRouter.get(
         homeTop: settings.adHomeTop,
         homeMid: settings.adHomeMid,
         watchBelow: settings.adWatchBelow,
+        detailTop: settings.adDetailTop,
         detailBelow: settings.adDetailBelow,
+        detailBottom: settings.adDetailBottom,
       },
     });
   }),

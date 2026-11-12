@@ -18,7 +18,9 @@ export interface PublicSettings {
     homeTop: string;
     homeMid: string;
     watchBelow: string;
+    detailTop: string;
     detailBelow: string;
+    detailBottom: string;
   };
 }
 

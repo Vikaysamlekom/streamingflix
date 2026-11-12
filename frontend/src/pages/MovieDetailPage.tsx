@@ -48,6 +48,13 @@ export function MovieDetailPage() {
 
   return (
     <div>
+      {/* Iklan: banner atas halaman (468×60) */}
+      <AdSlotFromSettings
+        position="detailTop"
+        className="mx-auto flex max-w-[1400px] justify-center px-4 pt-4 sm:px-6 lg:px-8"
+        minHeight={66}
+      />
+
       {/* Banner */}
       <div className="relative">
         <div className="absolute inset-0 -z-10 h-[420px] overflow-hidden">
@@ -139,7 +146,7 @@ export function MovieDetailPage() {
         </div>
       </div>
 
-      {/* Iklan: di bawah sinopsis, sebelum film serupa */}
+      {/* Iklan: di bawah sinopsis, sebelum film serupa (native banner) */}
       <AdSlotFromSettings
         position="detailBelow"
         className="mx-auto mt-4 flex max-w-[1400px] justify-center px-4 sm:px-6 lg:px-8"
@@ -155,6 +162,13 @@ export function MovieDetailPage() {
           </MovieRow>
         </div>
       ) : null}
+
+      {/* Iklan: paling bawah halaman film (300×250) */}
+      <AdSlotFromSettings
+        position="detailBottom"
+        className="mx-auto mb-8 flex max-w-[1400px] justify-center px-4 sm:px-6 lg:px-8"
+        minHeight={260}
+      />
     </div>
   );
 }

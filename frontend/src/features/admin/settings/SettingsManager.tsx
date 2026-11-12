@@ -63,7 +63,9 @@ const adsSchema = z.object({
   adHomeTop: z.string().max(20000, 'Kode terlalu panjang (maks. 20000 karakter)'),
   adHomeMid: z.string().max(20000, 'Kode terlalu panjang (maks. 20000 karakter)'),
   adWatchBelow: z.string().max(20000, 'Kode terlalu panjang (maks. 20000 karakter)'),
+  adDetailTop: z.string().max(20000, 'Kode terlalu panjang (maks. 20000 karakter)'),
   adDetailBelow: z.string().max(20000, 'Kode terlalu panjang (maks. 20000 karakter)'),
+  adDetailBottom: z.string().max(20000, 'Kode terlalu panjang (maks. 20000 karakter)'),
 });
 
 type AdsFormValues = z.infer<typeof adsSchema>;
@@ -292,7 +294,9 @@ function AdsPanel({ loading, settings }: SitePanelProps) {
       adHomeTop: '',
       adHomeMid: '',
       adWatchBelow: '',
+      adDetailTop: '',
       adDetailBelow: '',
+      adDetailBottom: '',
     },
   });
 
@@ -303,7 +307,9 @@ function AdsPanel({ loading, settings }: SitePanelProps) {
       adHomeTop: settings.adHomeTop,
       adHomeMid: settings.adHomeMid,
       adWatchBelow: settings.adWatchBelow,
+      adDetailTop: settings.adDetailTop,
       adDetailBelow: settings.adDetailBelow,
+      adDetailBottom: settings.adDetailBottom,
     });
   }, [settings, reset]);
 
@@ -352,15 +358,16 @@ function AdsPanel({ loading, settings }: SitePanelProps) {
       <div className="rounded-[var(--radius-button)] border border-border bg-background px-4 py-3">
         <p className="text-sm text-text-muted">
           Tempel kode iklan (HTML) dari jaringan iklan Anda di posisi yang
-          sesuai. Kosongkan untuk menyembunyikan iklan. Perubahan langsung
-          aktif tanpa deploy ulang.
+          sesuai. Satu kolom boleh diisi lebih dari satu kode (gabungkan saja).
+          Kosongkan untuk menyembunyikan iklan. Perubahan langsung aktif tanpa
+          deploy ulang.
         </p>
       </div>
 
       <Textarea
-        label="Script Global (Header)"
+        label="Script Global — Seluruh Halaman"
         rows={4}
-        hint="Script sekali jalan untuk seluruh halaman — mis. social bar / push script."
+        hint="Popunder, Social Bar, dan Smart Link (bila berupa script). Jalan di semua halaman, termasuk halaman film. Boleh tempel dua-tiganya berurutan dalam kolom ini."
         error={errors.adHeaderCode?.message}
         {...register('adHeaderCode')}
       />
@@ -386,11 +393,25 @@ function AdsPanel({ loading, settings }: SitePanelProps) {
         {...register('adWatchBelow')}
       />
       <Textarea
-        label="Detail Film — Di Bawah Sinopsis"
+        label="Halaman Film — Banner Atas"
         rows={4}
-        hint="Sebelum daftar Film Serupa."
+        hint="Muncul begitu film diklik, di paling atas halaman. Cocok untuk Banner 468×60."
+        error={errors.adDetailTop?.message}
+        {...register('adDetailTop')}
+      />
+      <Textarea
+        label="Halaman Film — Di Bawah Sinopsis"
+        rows={4}
+        hint="Di tengah halaman film, sebelum daftar Film Serupa. Cocok untuk Native Banner."
         error={errors.adDetailBelow?.message}
         {...register('adDetailBelow')}
+      />
+      <Textarea
+        label="Halaman Film — Paling Bawah"
+        rows={4}
+        hint="Setelah daftar Film Serupa. Cocok untuk Banner 300×250."
+        error={errors.adDetailBottom?.message}
+        {...register('adDetailBottom')}
       />
 
       <div className="flex justify-end">
